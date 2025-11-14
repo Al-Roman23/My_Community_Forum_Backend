@@ -1,9 +1,9 @@
 // --- MODULE IMPORTS ---
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
-const admin = require("firebase-admin");
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const admin = require("firebase-admin");
+require("dotenv").config();
 
 const app = express();
 
@@ -12,7 +12,6 @@ const decoded = Buffer.from(
   process.env.FIREBASE_SERVICE_KEY,
   "base64"
 ).toString("utf8");
-
 const serviceAccount = JSON.parse(decoded);
 
 if (!admin.apps.length) {
@@ -27,7 +26,6 @@ app.use(express.json());
 
 // --- MONGODB CLIENT ---
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@mycommunityforumcluster.3qgolgq.mongodb.net/?appName=myCommunityForumCluster`;
-
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -47,12 +45,16 @@ async function connectDB() {
   return dbConnection;
 }
 
-// --- ROOT ROUTE ---
+// --- ROUTES ---
+const authRoutes = require("./routes/auth");
+const usersRoutes = require("./routes/users");
+const eventsRoutes = require("./routes/events");
+const joinedEventsRoutes = require("./routes/joinedEvents");
+
 app.get("/", (req, res) => {
   res.send("SERVER IS RUNNING!");
 });
 
-// --- DB CONNECTION MIDDLEWARE ---
 app.use(async (req, res, next) => {
   if (!dbConnection) {
     try {
@@ -65,7 +67,20 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// --- EXPORT / SERVER START ---
+app.use("/auth", authRoutes(client, admin));
+app.use("/users", usersRoutes(client, admin));
+app.use("/events", eventsRoutes(client, admin));
+app.use("/joinedEvents", joinedEventsRoutes(client, admin));
+
+// --- ERROR HANDLER ---
+app.use((err, req, res, next) => {
+  console.error("UNHANDLED ERROR: ", err);
+  res
+    .status(500)
+    .json({ message: "INTERNAL SERVER ERROR", error: err.message });
+});
+
+// --- EXPORT ---
 if (process.env.VERCEL) {
   module.exports = app;
 } else {
