@@ -1,96 +1,63 @@
 // --- MODULE IMPORTS ---
 const express = require("express");
-const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const admin = require("firebase-admin");
-require("dotenv").config();
+const jwt = require("jsonwebtoken");
 
-const app = express();
+// --- ROUTER INITIALIZATION ---
+const router = express.Router();
 
-// --- FIREBASE ADMIN ---
-const decoded = Buffer.from(
-  process.env.FIREBASE_SERVICE_KEY,
-  "base64"
-).toString("utf8");
+// --- JWT SECRET ---
+const JWT_SECRET = process.env.JWT_SECRET || "development_secret";
 
-const serviceAccount = JSON.parse(decoded);
+// --- JWT TOKEN GENERATION FUNCTION ---
+const generateJWT = (user) => {
+  const payload = { email: user.email, role: user.role || "user" };
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "5h" });
+};
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
+// --- FIREBASE TOKEN VERIFICATION MIDDLEWARE ---
+const verifyFirebaseToken = (admin) => async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader)
+    return res.status(401).send({ message: "UNAUTHORIZED ACCESS!" });
 
-// --- MIDDLEWARE ---
-app.use(cors());
-app.use(express.json());
+  const token = authHeader.split(" ")[1];
+  if (!token) return res.status(401).send({ message: "UNAUTHORIZED ACCESS!" });
 
-// --- MONGODB CLIENT ---
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@mycommunityforumcluster.3qgolgq.mongodb.net/?appName=myCommunityForumCluster`;
-
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
-
-let dbConnection = null;
-
-async function connectDB() {
-  if (dbConnection) return dbConnection;
-  await client.connect();
-  await client.db("admin").command({ ping: 1 });
-  console.log("DATABASE CONNECTED SUCCESSFULLY!");
-  dbConnection = client;
-  return dbConnection;
-}
-
-// --- ROOT ROUTE ---
-app.get("/", (req, res) => {
-  res.send("SERVER IS RUNNING!");
-});
-
-// --- DB CONNECTION MIDDLEWARE ---
-app.use(async (req, res, next) => {
-  if (!dbConnection) {
-    try {
-      await connectDB();
-    } catch (err) {
-      console.error("DB connection failed:", err);
-      return res.status(500).json({ message: "Database unavailable" });
-    }
+  try {
+    const decodedUser = await admin.auth().verifyIdToken(token);
+    req.token_email = decodedUser.email;
+    next();
+  } catch (err) {
+    console.error("FIREBASE VERIFICATION FAILED: ", err);
+    return res.status(401).send({ message: "UNAUTHORIZED ACCESS!" });
   }
-  next();
+};
+
+// --- AUTH ROUTE: ISSUE JWT TOKEN ---
+router.post("/getToken", verifyFirebaseToken, async (req, res) => {
+  try {
+    const token = generateJWT({ email: req.token_email });
+    res.send({ token });
+  } catch (err) {
+    console.error("ERROR GENERATING JWT: ", err);
+    res.status(500).send({ message: "FAILED TO GENERATE TOKEN" });
+  }
 });
 
-// --- ROUTES ---
-const authRoutes = require("./routes/auth");
-const usersRoutes = require("./routes/users");
-const eventsRoutes = require("./routes/events");
-const joinedEventsRoutes = require("./routes/joinedEvents");
-
-app.use("/auth", authRoutes(client, admin));
-app.use("/users", usersRoutes(client, admin));
-app.use("/events", eventsRoutes(client, admin));
-app.use("/joinedEvents", joinedEventsRoutes(client, admin));
-
-// --- ERROR HANDLER ---
-app.use((err, req, res, next) => {
-  console.error("UNHANDLED ERROR: ", err);
-  res.status(500).json({
-    message: "INTERNAL SERVER ERROR",
-    error: err.message,
+// --- AUTH ROUTE: VERIFY FIREBASE TOKEN ---
+router.get("/verify", verifyFirebaseToken, (req, res) => {
+  res.send({
+    message: "TOKEN VERIFIED SUCCESSFULLY",
+    email: req.token_email,
   });
 });
 
-// --- EXPORT / SERVER START ---
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.log(`SERVER IS RUNNING ON PORT: ${port}`);
+// --- ROUTER EXPORT FUNCTION ---
+module.exports = (client, admin) => {
+  router.use((req, res, next) => {
+    req.admin = admin;
+    next();
   });
-}
+
+  return router;
+};
