@@ -17,6 +17,7 @@ const verifyFirebaseToken = (admin) => async (req, res, next) => {
   try {
     const decodedUser = await admin.auth().verifyIdToken(token);
     req.token_email = decodedUser.email;
+    console.log("Verified Firebase User: ", decodedUser.email);
     next();
   } catch (err) {
     console.error("FIREBASE VERIFICATION FAILED: ", err);
@@ -26,14 +27,18 @@ const verifyFirebaseToken = (admin) => async (req, res, next) => {
 
 // --- ROUTER EXPORT FUNCTION ---
 module.exports = (client, admin) => {
+  // --- ATTACH ADMIN AND CLIENT TO REQUEST ---
   router.use((req, res, next) => {
     req.admin = admin;
     req.app.locals.client = client;
     next();
   });
 
+  // --- CREATE MIDDLEWARE INSTANCE WITH ADMIN ---
+  const verifyToken = verifyFirebaseToken(admin);
+
   // --- JOIN AN EVENT ---
-  router.post("/", verifyFirebaseToken(admin), async (req, res) => {
+  router.post("/", verifyToken, async (req, res) => {
     try {
       const { eventId } = req.body;
       const userEmail = req.token_email;
@@ -45,6 +50,7 @@ module.exports = (client, admin) => {
       const joinedEventsCollection = db.collection("joinedEvents");
       const eventsCollection = db.collection("events");
 
+      // --- CHECK IF USER ALREADY JOINED ---
       const existingJoin = await joinedEventsCollection.findOne({
         eventId,
         userEmail,
@@ -52,12 +58,14 @@ module.exports = (client, admin) => {
       if (existingJoin)
         return res.send({ message: "ALREADY JOINED THIS EVENT!" });
 
+      // --- CHECK IF EVENT EXISTS ---
       const eventExists = await eventsCollection.findOne({
         _id: new ObjectId(eventId),
       });
       if (!eventExists)
         return res.status(404).send({ message: "EVENT DOES NOT EXIST!" });
 
+      // --- INSERT JOIN RECORD ---
       const joinEntry = { eventId, userEmail, joinedAt: new Date() };
       const result = await joinedEventsCollection.insertOne(joinEntry);
 
@@ -92,7 +100,7 @@ module.exports = (client, admin) => {
   });
 
   // --- GET FULL EVENT DETAILS FOR MY JOINED EVENTS ---
-  router.get("/my-joined", verifyFirebaseToken(admin), async (req, res) => {
+  router.get("/my-joined", verifyToken, async (req, res) => {
     try {
       const userEmail = req.token_email;
 
@@ -122,7 +130,7 @@ module.exports = (client, admin) => {
   });
 
   // --- LEAVE AN EVENT ---
-  router.delete("/:id", verifyFirebaseToken(admin), async (req, res) => {
+  router.delete("/:id", verifyToken, async (req, res) => {
     try {
       const db = req.app.locals.client.db("my_community_forum_db");
       const joinedEventsCollection = db.collection("joinedEvents");
@@ -141,5 +149,6 @@ module.exports = (client, admin) => {
     }
   });
 
+  // --- RETURN ROUTER INSTANCE ---
   return router;
 };

@@ -27,13 +27,17 @@ const verifyFirebaseToken = (admin) => async (req, res, next) => {
 
 // --- ROUTER EXPORT FUNCTION ---
 module.exports = (client, admin) => {
+  // --- ATTACH CLIENT TO REQUEST ---
   router.use((req, res, next) => {
     req.app.locals.client = client;
     next();
   });
 
+  // --- CREATE MIDDLEWARE INSTANCE WITH ADMIN ---
+  const verifyToken = verifyFirebaseToken(admin);
+
   // --- CREATE EVENT ---
-  router.post("/", verifyFirebaseToken(admin), async (req, res) => {
+  router.post("/", verifyToken, async (req, res) => {
     try {
       const {
         title,
@@ -58,6 +62,10 @@ module.exports = (client, admin) => {
       }
 
       const eventDate = new Date(date);
+      if (isNaN(eventDate.getTime())) {
+        return res.status(400).send({ message: "INVALID EVENT DATE!" });
+      }
+
       if (eventDate < new Date()) {
         return res
           .status(400)
@@ -74,7 +82,16 @@ module.exports = (client, admin) => {
         .db("my_community_forum_db")
         .collection("events");
 
-      const result = await eventsCollection.insertOne(req.body);
+      const result = await eventsCollection.insertOne({
+        title,
+        description,
+        eventType,
+        thumbnail,
+        location,
+        date: eventDate,
+        creatorEmail,
+      });
+
       res.send(result);
     } catch (err) {
       console.error("ERROR CREATING EVENT: ", err);
@@ -91,7 +108,8 @@ module.exports = (client, admin) => {
 
       const today = new Date();
       const events = await eventsCollection
-        .find({ date: { $gte: today.toISOString() } })
+        .find({ date: { $gte: today } })
+        .sort({ date: 1 })
         .toArray();
 
       res.send(events);
@@ -123,7 +141,7 @@ module.exports = (client, admin) => {
   });
 
   // --- GET EVENTS CREATED BY THE LOGGED-IN USER ---
-  router.get("/my-events", verifyFirebaseToken(admin), async (req, res) => {
+  router.get("/my-events", verifyToken, async (req, res) => {
     try {
       const userEmail = req.token_email;
 
@@ -171,9 +189,11 @@ module.exports = (client, admin) => {
   });
 
   // --- UPDATE EVENT BY ID ---
-  router.patch("/:id", verifyFirebaseToken(admin), async (req, res) => {
+  router.patch("/:id", verifyToken, async (req, res) => {
     try {
       const updatedEvent = req.body;
+
+      if (updatedEvent.date) updatedEvent.date = new Date(updatedEvent.date);
 
       const eventsCollection = req.app.locals.client
         .db("my_community_forum_db")
@@ -192,7 +212,7 @@ module.exports = (client, admin) => {
   });
 
   // --- DELETE EVENT AND ITS JOINED RECORDS ---
-  router.delete("/:id", verifyFirebaseToken(admin), async (req, res) => {
+  router.delete("/:id", verifyToken, async (req, res) => {
     try {
       const eventIdParam = req.params.id;
       const eventObjectId = new ObjectId(eventIdParam);
@@ -202,7 +222,7 @@ module.exports = (client, admin) => {
       const joinedEventsCollection = db.collection("joinedEvents");
 
       await joinedEventsCollection.deleteMany({
-        $or: [{ eventId: eventObjectId }, { eventId: eventIdParam }],
+        $or: [{ eventId: eventObjectId.toString() }, { eventId: eventIdParam }],
       });
 
       const result = await eventsCollection.deleteOne({ _id: eventObjectId });

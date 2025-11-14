@@ -33,30 +33,34 @@ const verifyFirebaseToken = (admin) => async (req, res, next) => {
   }
 };
 
-// --- AUTH ROUTE: ISSUE JWT TOKEN ---
-router.post("/getToken", verifyFirebaseToken, async (req, res) => {
-  try {
-    const token = generateJWT({ email: req.token_email });
-    res.send({ token });
-  } catch (err) {
-    console.error("ERROR GENERATING JWT: ", err);
-    res.status(500).send({ message: "FAILED TO GENERATE TOKEN" });
-  }
-});
-
-// --- AUTH ROUTE: VERIFY FIREBASE TOKEN ---
-router.get("/verify", verifyFirebaseToken, (req, res) => {
-  res.send({
-    message: "TOKEN VERIFIED SUCCESSFULLY",
-    email: req.token_email,
-  });
-});
-
 // --- ROUTER EXPORT FUNCTION ---
 module.exports = (client, admin) => {
+  // --- ATTACH ADMIN TO REQUEST ---
   router.use((req, res, next) => {
     req.admin = admin;
     next();
+  });
+
+  // --- CREATE MIDDLEWARE INSTANCE WITH ADMIN ---
+  const verifyToken = verifyFirebaseToken(admin);
+
+  // --- AUTH ROUTE: ISSUE JWT TOKEN ---
+  router.post("/getToken", verifyToken, async (req, res) => {
+    try {
+      const token = generateJWT({ email: req.token_email });
+      res.send({ token });
+    } catch (err) {
+      console.error("ERROR GENERATING JWT: ", err);
+      res.status(500).send({ message: "FAILED TO GENERATE TOKEN" });
+    }
+  });
+
+  // --- AUTH ROUTE: VERIFY FIREBASE TOKEN ---
+  router.get("/verify", verifyToken, (req, res) => {
+    res.send({
+      message: "TOKEN VERIFIED SUCCESSFULLY",
+      email: req.token_email,
+    });
   });
 
   return router;

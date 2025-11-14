@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 
-// --- EXPORT FUNCTION ---
+// --- ROUTER EXPORT FUNCTION ---
 module.exports = (client, admin) => {
   // --- FIREBASE TOKEN VERIFICATION MIDDLEWARE ---
   const verifyFirebaseToken = async (req, res, next) => {
@@ -49,7 +49,7 @@ module.exports = (client, admin) => {
     }
   });
 
-  // --- GET ALL USERS ---
+  // --- GET ALL USERS (ADMIN ONLY) ---
   router.get("/", verifyFirebaseToken, async (req, res) => {
     try {
       const usersCollection = client
