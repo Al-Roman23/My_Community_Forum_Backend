@@ -9,7 +9,11 @@ const router = express.Router();
 router.get("/", JoinedEventController.getJoinedEventsByEmail);
 
 // Get My Joined Events With Full Details (Protected)
-router.get("/my-joined", verifyAuthToken, JoinedEventController.getMyJoinedEvents);
+router.get(
+  "/my-joined",
+  verifyAuthToken,
+  JoinedEventController.getMyJoinedEvents
+);
 
 // Join Event (Protected)
 router.post("/", verifyAuthToken, JoinedEventController.joinEvent);
@@ -18,4 +22,3 @@ router.post("/", verifyAuthToken, JoinedEventController.joinEvent);
 router.delete("/:id", verifyAuthToken, JoinedEventController.leaveEvent);
 
 module.exports = router;
-

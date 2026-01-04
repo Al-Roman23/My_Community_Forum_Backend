@@ -27,4 +27,3 @@ router.patch("/:id", verifyAuthToken, EventController.updateEvent);
 router.delete("/:id", verifyAuthToken, EventController.deleteEvent);
 
 module.exports = router;
-

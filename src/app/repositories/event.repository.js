@@ -34,10 +34,7 @@ class EventRepository {
   // Find Events By Creator Email
   async findByCreatorEmail(creatorEmail) {
     const eventsCollection = await getCollection("events");
-    return eventsCollection
-      .find({ creatorEmail })
-      .sort({ date: 1 })
-      .toArray();
+    return eventsCollection.find({ creatorEmail }).sort({ date: 1 }).toArray();
   }
 
   // Update Event By ID
@@ -57,4 +54,3 @@ class EventRepository {
 }
 
 module.exports = new EventRepository();
-

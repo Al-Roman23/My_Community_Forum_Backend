@@ -1,9 +1,25 @@
 // This File Validates Event Input
 function validateCreateEvent(data) {
-  const { title, description, eventType, thumbnail, location, date, creatorEmail } = data;
+  const {
+    title,
+    description,
+    eventType,
+    thumbnail,
+    location,
+    date,
+    creatorEmail,
+  } = data;
 
   // Check Required Fields
-  if (!title || !description || !eventType || !thumbnail || !location || !date || !creatorEmail) {
+  if (
+    !title ||
+    !description ||
+    !eventType ||
+    !thumbnail ||
+    !location ||
+    !date ||
+    !creatorEmail
+  ) {
     return {
       valid: false,
       message: "ALL FIELDS ARE REQUIRED!",
@@ -25,4 +41,3 @@ function validateCreateEvent(data) {
 }
 
 module.exports = { validateCreateEvent };
-

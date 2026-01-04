@@ -75,9 +75,7 @@ async function startServer() {
 // Graceful Shutdown Handler
 async function shutdown(signal) {
   try {
-    logger.info(
-      `Received ${signal}. Closing Server And MongoDB Connection...`
-    );
+    logger.info(`Received ${signal}. Closing Server And MongoDB Connection...`);
 
     if (serverInstance) {
       await new Promise((resolve) => serverInstance.close(resolve));

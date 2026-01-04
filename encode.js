@@ -9,9 +9,12 @@ try {
   const base64 = Buffer.from(key).toString("base64");
   console.log("\n=== Base64 Encoded Firebase Service Key ===\n");
   console.log(base64);
-  console.log("\n=== Copy the above string to your .env file as FIREBASE_SERVICE_KEY ===\n");
+  console.log(
+    "\n=== Copy the above string to your .env file as FIREBASE_SERVICE_KEY ===\n"
+  );
 } catch (err) {
   console.error("Error reading or encoding file:", err.message);
-  console.log("\nMake sure 'mygopts-firebase-adminsdk.json' exists in the ServeR folder.");
+  console.log(
+    "\nMake sure 'mygopts-firebase-adminsdk.json' exists in the ServeR folder."
+  );
 }
-

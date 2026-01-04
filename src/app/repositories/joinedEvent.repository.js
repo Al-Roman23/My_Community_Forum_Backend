@@ -59,13 +59,9 @@ class JoinedEventRepository {
     const joinedEventsCollection = await getCollection("joinedEvents");
     const eventIdString = eventId.toString();
     return joinedEventsCollection.deleteMany({
-      $or: [
-        { eventId: eventIdString },
-        { eventId: new ObjectId(eventId) },
-      ],
+      $or: [{ eventId: eventIdString }, { eventId: new ObjectId(eventId) }],
     });
   }
 }
 
 module.exports = new JoinedEventRepository();
-

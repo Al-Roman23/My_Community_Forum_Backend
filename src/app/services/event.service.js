@@ -42,7 +42,7 @@ class EventService {
   // Search Events
   async searchEvents(query) {
     const searchQuery = {};
-    
+
     if (query.type) {
       searchQuery.eventType = { $regex: new RegExp(query.type, "i") };
     }
@@ -95,4 +95,3 @@ class EventService {
 }
 
 module.exports = new EventService();
-

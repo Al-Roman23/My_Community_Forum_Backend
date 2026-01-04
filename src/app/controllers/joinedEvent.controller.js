@@ -64,4 +64,3 @@ class JoinedEventController {
 }
 
 module.exports = new JoinedEventController();
-

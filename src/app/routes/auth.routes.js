@@ -12,4 +12,3 @@ router.post("/getToken", verifyAuthToken, AuthController.getToken);
 router.get("/verify", verifyAuthToken, AuthController.verifyToken);
 
 module.exports = router;
-

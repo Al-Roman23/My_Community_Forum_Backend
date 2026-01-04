@@ -10,9 +10,9 @@ function errorHandler(err, req, res, next) {
   const message = err.message || "INTERNAL SERVER ERROR";
 
   // Send JSON Response With Error Information
-  res.status(status).json({ 
+  res.status(status).json({
     message,
-    ...(process.env.NODE_ENV === "development" && { error: err.stack })
+    ...(process.env.NODE_ENV === "development" && { error: err.stack }),
   });
 }
 

@@ -10,7 +10,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Firebase Service Account (Keep this private!)
+# Firebase Service Account!
 *.json
 !package.json
 !package-lock.json

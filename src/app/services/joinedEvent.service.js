@@ -53,4 +53,3 @@ class JoinedEventService {
 }
 
 module.exports = new JoinedEventService();
-

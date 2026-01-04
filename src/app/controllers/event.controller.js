@@ -103,4 +103,3 @@ class EventController {
 }
 
 module.exports = new EventController();
-

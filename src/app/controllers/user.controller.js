@@ -10,7 +10,11 @@ class UserController {
       const { name, email, photoURL, role } = req.body;
 
       // Validate User Input
-      const validation = validateRegisterUser({ name, email, role: role || "user" });
+      const validation = validateRegisterUser({
+        name,
+        email,
+        role: role || "user",
+      });
       if (!validation.valid) throw new BadRequest(validation.message);
 
       // Prepare New User Object

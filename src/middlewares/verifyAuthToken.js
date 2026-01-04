@@ -23,7 +23,7 @@ async function verifyAuthToken(req, res, next) {
       email: decoded.email,
       role: decoded.role || null,
     };
-    
+
     // Also attach email for backward compatibility
     req.token_email = decoded.email;
 
